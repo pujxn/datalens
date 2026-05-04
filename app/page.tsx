@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ScanEye, Upload, Sparkles, MessageSquare, ArrowRight, BarChart2, Zap, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 
 const features = [
   {
@@ -60,12 +61,20 @@ export default function LandingPage() {
             <span className="text-lg font-bold tracking-tight">DataLens</span>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/sign-in">
-              <Button variant="ghost" size="sm" className="text-muted-foreground">Sign in</Button>
-            </Link>
-            <Link href="/sign-up">
-              <Button size="sm" className="gap-1.5">Get started <ArrowRight className="h-3.5 w-3.5" /></Button>
-            </Link>
+            <SignedOut>
+              <Link href="/sign-in">
+                <Button variant="ghost" size="sm" className="text-muted-foreground">Sign in</Button>
+              </Link>
+              <Link href="/sign-up">
+                <Button size="sm" className="gap-1.5">Get started <ArrowRight className="h-3.5 w-3.5" /></Button>
+              </Link>
+            </SignedOut>
+            <SignedIn>
+              <Link href="/dashboard">
+                <Button size="sm" className="gap-1.5">Dashboard <ArrowRight className="h-3.5 w-3.5" /></Button>
+              </Link>
+              <UserButton afterSignOutUrl="/" />
+            </SignedIn>
           </div>
         </div>
       </nav>
@@ -76,7 +85,7 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs text-primary font-medium">
             <Zap className="h-3.5 w-3.5" />
-            Powered by Groq — the fastest AI inference on earth
+            AI-powered data analysis
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1]">
