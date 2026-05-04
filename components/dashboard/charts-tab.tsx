@@ -3,9 +3,9 @@
 import { useState, useMemo } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid, Cell, Legend,
+  LineChart, Line, CartesianGrid, Legend, Cell,
 } from 'recharts'
-import { BarChart2, TrendingUp, Hash } from 'lucide-react'
+import { BarChart2, TrendingUp, Hash, PieChart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ParsedCSV, ColumnInfo } from '@/lib/csv-utils'
 
@@ -14,10 +14,11 @@ type Props = { data: ParsedCSV }
 type ChartDef = {
   id: string
   label: string
+  description: string
   icon: React.ReactNode
-  type: 'histogram' | 'bar' | 'line'
-  col: string
-  numCol?: string
+  build: (rows: Record<string, string>[]) => unknown[]
+  chartType: 'bar' | 'line' | 'histogram'
+  dataKey: string
 }
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899']
@@ -30,89 +31,169 @@ const TOOLTIP_STYLE = {
   color: 'hsl(210 40% 98%)',
 }
 
-function buildHistogram(values: number[], bins = 10) {
-  const clean = values.filter(v => !isNaN(v))
-  if (!clean.length) return []
-  const min = Math.min(...clean)
-  const max = Math.max(...clean)
-  if (min === max) return [{ label: String(min), count: clean.length }]
+// --- data builders ---
+
+function aggregateByCategory(
+  rows: Record<string, string>[],
+  catCol: string,
+  numCol: string,
+  agg: 'sum' | 'avg',
+  maxBars = 12
+) {
+  const groups: Record<string, number[]> = {}
+  rows.forEach(r => {
+    const key = r[catCol]?.trim()
+    const val = parseFloat(r[numCol])
+    if (key && !isNaN(val)) {
+      groups[key] = groups[key] || []
+      groups[key].push(val)
+    }
+  })
+  return Object.entries(groups)
+    .map(([label, vals]) => ({
+      label: label.length > 14 ? label.slice(0, 14) + '…' : label,
+      value: agg === 'sum'
+        ? parseFloat(vals.reduce((a, b) => a + b, 0).toFixed(2))
+        : parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2)),
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, maxBars)
+}
+
+function buildTimeSeries(
+  rows: Record<string, string>[],
+  dateCol: string,
+  numCol: string,
+  agg: 'sum' | 'avg'
+) {
+  const groups: Record<string, number[]> = {}
+  rows.forEach(r => {
+    const month = (r[dateCol] ?? '').slice(0, 7)
+    const val = parseFloat(r[numCol])
+    if (month && !isNaN(val)) {
+      groups[month] = groups[month] || []
+      groups[month].push(val)
+    }
+  })
+  return Object.entries(groups)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([label, vals]) => ({
+      label,
+      value: agg === 'sum'
+        ? parseFloat(vals.reduce((a, b) => a + b, 0).toFixed(2))
+        : parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2)),
+    }))
+}
+
+function buildHistogram(rows: Record<string, string>[], col: string) {
+  const vals = rows.map(r => parseFloat(r[col])).filter(v => !isNaN(v))
+  if (!vals.length) return []
+  const min = Math.min(...vals)
+  const max = Math.max(...vals)
+  if (min === max) return [{ label: String(min), value: vals.length }]
+  // bin count: sqrt of n, capped 5–15
+  const bins = Math.min(15, Math.max(5, Math.round(Math.sqrt(vals.length))))
   const size = (max - min) / bins
   const buckets = Array.from({ length: bins }, (_, i) => ({
     label: (min + i * size).toFixed(1),
-    count: 0,
+    value: 0,
   }))
-  clean.forEach(v => {
+  vals.forEach(v => {
     const i = Math.min(Math.floor((v - min) / size), bins - 1)
-    buckets[i].count++
+    buckets[i].value++
   })
   return buckets
 }
 
-function buildFrequency(values: string[], max = 12) {
-  const freq: Record<string, number> = {}
-  values.forEach(v => { if (v) freq[v] = (freq[v] || 0) + 1 })
-  return Object.entries(freq)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, max)
-    .map(([label, count]) => ({ label: label.length > 14 ? label.slice(0, 14) + '…' : label, count }))
-}
+// --- chart selection logic ---
 
-function buildTimeSeries(rows: Record<string, string>[], dateCol: string, numCol: string) {
-  const grouped: Record<string, number[]> = {}
-  rows.forEach(row => {
-    const month = (row[dateCol] ?? '').slice(0, 7)
-    const val = parseFloat(row[numCol])
-    if (month && !isNaN(val)) {
-      grouped[month] = grouped[month] || []
-      grouped[month].push(val)
-    }
-  })
-  return Object.entries(grouped)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([label, vals]) => ({
-      label,
-      value: parseFloat((vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2)),
-    }))
-}
-
-function buildCharts(columns: ColumnInfo[]): ChartDef[] {
+function buildCharts(columns: ColumnInfo[], rows: Record<string, string>[]): ChartDef[] {
   const numeric = columns.filter(c => c.type === 'numeric')
-  const categorical = columns.filter(c => c.type === 'categorical' && c.uniqueCount <= 20)
-  const date = columns.filter(c => c.type === 'date')
+  const lowCard = columns.filter(c => c.type === 'categorical' && c.uniqueCount <= 15)
+  const highCard = columns.filter(c => c.type === 'categorical' && c.uniqueCount > 15)
+  const dates = columns.filter(c => c.type === 'date')
   const charts: ChartDef[] = []
 
-  numeric.slice(0, 2).forEach(col => {
-    charts.push({ id: `hist-${col.name}`, label: col.name, icon: <Hash className="h-3.5 w-3.5" />, type: 'histogram', col: col.name })
+  // 1. Categorical × Numeric aggregations (most insightful)
+  lowCard.forEach(cat => {
+    numeric.slice(0, 2).forEach(num => {
+      const agg = num.name.toLowerCase().includes('count') || num.name.toLowerCase().includes('unit') ? 'sum' : 'sum'
+      charts.push({
+        id: `agg-${cat.name}-${num.name}`,
+        label: `${num.name} by ${cat.name}`,
+        description: `Total ${num.name} grouped by ${cat.name}`,
+        icon: <BarChart2 className="h-3.5 w-3.5" />,
+        chartType: 'bar',
+        dataKey: 'value',
+        build: (r) => aggregateByCategory(r, cat.name, num.name, agg),
+      })
+    })
   })
-  categorical.slice(0, 2).forEach(col => {
-    charts.push({ id: `bar-${col.name}`, label: col.name, icon: <BarChart2 className="h-3.5 w-3.5" />, type: 'bar', col: col.name })
-  })
-  if (date.length && numeric.length) {
-    charts.push({ id: `line-${date[0].name}`, label: `${numeric[0].name} over time`, icon: <TrendingUp className="h-3.5 w-3.5" />, type: 'line', col: date[0].name, numCol: numeric[0].name })
+
+  // 2. Time series: date × numeric
+  if (dates.length) {
+    numeric.forEach(num => {
+      charts.push({
+        id: `time-${dates[0].name}-${num.name}`,
+        label: `${num.name} over time`,
+        description: `${num.name} aggregated by month`,
+        icon: <TrendingUp className="h-3.5 w-3.5" />,
+        chartType: 'line',
+        dataKey: 'value',
+        build: (r) => buildTimeSeries(r, dates[0].name, num.name, 'sum'),
+      })
+    })
   }
 
-  return charts.slice(0, 4)
+  // 3. Histograms for numeric distributions (only if enough rows)
+  if (rows.length >= 20) {
+    numeric.forEach(num => {
+      charts.push({
+        id: `hist-${num.name}`,
+        label: `${num.name} distribution`,
+        description: `Frequency distribution of ${num.name}`,
+        icon: <Hash className="h-3.5 w-3.5" />,
+        chartType: 'histogram',
+        dataKey: 'value',
+        build: (r) => buildHistogram(r, num.name),
+      })
+    })
+  }
+
+  // 4. High-cardinality categoricals — frequency only if cardinality is reasonable
+  highCard.filter(c => c.uniqueCount <= 50).forEach(cat => {
+    charts.push({
+      id: `freq-${cat.name}`,
+      label: `${cat.name} frequency`,
+      description: `How often each ${cat.name} appears`,
+      icon: <PieChart className="h-3.5 w-3.5" />,
+      chartType: 'bar',
+      dataKey: 'value',
+      build: (r) => {
+        const freq: Record<string, number> = {}
+        r.forEach(row => { const v = row[cat.name]; if (v) freq[v] = (freq[v] || 0) + 1 })
+        return Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 15)
+          .map(([label, value]) => ({ label: label.length > 14 ? label.slice(0, 14) + '…' : label, value }))
+      },
+    })
+  })
+
+  // Deduplicate and cap
+  const seen = new Set<string>()
+  return charts.filter(c => {
+    if (seen.has(c.id)) return false
+    seen.add(c.id)
+    return true
+  }).slice(0, 6)
 }
 
 export function ChartsTab({ data }: Props) {
-  const charts = useMemo(() => buildCharts(data.columns), [data.columns])
+  const charts = useMemo(() => buildCharts(data.columns, data.rows), [data.columns, data.rows])
   const [active, setActive] = useState(0)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const chartData: any[] = useMemo(() => {
+  const chartData = useMemo(() => {
     const c = charts[active]
-    if (!c) return []
-    if (c.type === 'histogram') {
-      const vals = data.rows.map(r => parseFloat(r[c.col]))
-      return buildHistogram(vals)
-    }
-    if (c.type === 'bar') {
-      return buildFrequency(data.rows.map(r => r[c.col]))
-    }
-    if (c.type === 'line' && c.numCol) {
-      return buildTimeSeries(data.rows, c.col, c.numCol)
-    }
-    return []
+    return c ? c.build(data.rows) as { label: string; value: number }[] : []
   }, [active, charts, data.rows])
 
   if (!charts.length) {
@@ -127,9 +208,7 @@ export function ChartsTab({ data }: Props) {
   }
 
   const current = charts[active]
-  const isLine = current?.type === 'line'
-  const dataKey = isLine ? 'value' : 'count'
-  const angleLabels = chartData.length > 7
+  const angleLabels = chartData.length > 6
 
   return (
     <div className="flex flex-col gap-5 p-5">
@@ -155,16 +234,19 @@ export function ChartsTab({ data }: Props) {
 
       {/* Chart */}
       <div className="rounded-xl border border-border/50 bg-card p-5">
-        <p className="text-sm font-medium mb-5 text-foreground/80">{current?.label}</p>
+        <div className="mb-5">
+          <p className="text-sm font-medium text-foreground">{current?.label}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{current?.description}</p>
+        </div>
         <ResponsiveContainer width="100%" height={280}>
-          {isLine ? (
+          {current?.chartType === 'line' ? (
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(217.2 32.6% 17.5%)" />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'hsl(215 20.2% 65.1%)' }} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(215 20.2% 65.1%)' }} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 12, color: 'hsl(215 20.2% 65.1%)' }} />
-              <Line type="monotone" dataKey={dataKey} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: '#3b82f6' }} activeDot={{ r: 5 }} />
+              <Line type="monotone" dataKey="value" name={current.label} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: '#3b82f6' }} activeDot={{ r: 5 }} />
             </LineChart>
           ) : (
             <BarChart data={chartData}>
@@ -174,12 +256,12 @@ export function ChartsTab({ data }: Props) {
                 tick={{ fontSize: 11, fill: 'hsl(215 20.2% 65.1%)' }}
                 angle={angleLabels ? -35 : 0}
                 textAnchor={angleLabels ? 'end' : 'middle'}
-                height={angleLabels ? 55 : 30}
+                height={angleLabels ? 60 : 30}
               />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(215 20.2% 65.1%)' }} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 12, color: 'hsl(215 20.2% 65.1%)' }} />
-              <Bar dataKey={dataKey} radius={[4, 4, 0, 0]}>
+              <Bar dataKey="value" name={current?.label} radius={[4, 4, 0, 0]}>
                 {chartData.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.85} />
                 ))}
