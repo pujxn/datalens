@@ -259,7 +259,7 @@ export function ChartsTab({ data }: Props) {
                 height={angleLabels ? 60 : 30}
               />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(215 20.2% 65.1%)' }} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'transparent' }} />
               <Legend wrapperStyle={{ fontSize: 12, color: 'hsl(215 20.2% 65.1%)' }} />
               <Bar dataKey="value" name={current?.label} radius={[4, 4, 0, 0]}>
                 {chartData.map((_, i) => (
