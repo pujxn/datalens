@@ -2,7 +2,7 @@ import Groq from 'groq-sdk'
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest } from 'next/server'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+const groq = () => new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 export async function POST(req: NextRequest) {
   const { userId } = auth()
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       `Sample data (up to 100 rows):\n${JSON.stringify(sampleRows.slice(0, 100))}`,
   }
 
-  const stream = await groq.chat.completions.create({
+  const stream = await groq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     max_tokens: 1024,
     stream: true,
