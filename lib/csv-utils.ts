@@ -37,7 +37,7 @@ function detectType(values: string[]): ColumnType {
   const numericRatio = nonNull.filter(v =>
     !isNaN(Number(v.replace(/,/g, '').trim())) && v.trim() !== ''
   ).length / nonNull.length
-  if (numericRatio > 0.85) return 'numeric'
+  if (numericRatio > 0.7) return 'numeric'
 
   return 'categorical'
 }

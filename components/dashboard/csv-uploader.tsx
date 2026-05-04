@@ -27,6 +27,8 @@ export function CSVUploader({ onDataParsed, hasData }: Props) {
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: true,
+      quoteChar: '"',
+      escapeChar: '"',
       complete: (result) => {
         const headers = result.meta.fields ?? []
         const rows = result.data as Record<string, string>[]
