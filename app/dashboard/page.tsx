@@ -6,7 +6,9 @@ import { ScanEye, FileSpreadsheet } from 'lucide-react'
 import Link from 'next/link'
 import { CSVUploader } from '@/components/dashboard/csv-uploader'
 import { DataTable } from '@/components/dashboard/data-table'
+import { InsightsTab } from '@/components/dashboard/insights-tab'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { ParsedCSV } from '@/lib/csv-utils'
 
 export default function DashboardPage() {
@@ -52,9 +54,32 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Right — analysis panel (coming next) */}
-        <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-          Insights, charts &amp; chat coming next…
+        {/* Right — tabs */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {data ? (
+            <Tabs defaultValue="insights" className="flex flex-col h-full">
+              <div className="px-4 pt-4 shrink-0">
+                <TabsList className="w-full">
+                  <TabsTrigger value="insights" className="flex-1">Insights</TabsTrigger>
+                  <TabsTrigger value="charts" className="flex-1">Charts</TabsTrigger>
+                  <TabsTrigger value="ask" className="flex-1">Ask</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="insights" className="flex-1 overflow-auto mt-0">
+                <InsightsTab data={data} />
+              </TabsContent>
+              <TabsContent value="charts" className="flex-1 overflow-auto mt-0 flex items-center justify-center text-sm text-muted-foreground">
+                Charts coming next…
+              </TabsContent>
+              <TabsContent value="ask" className="flex-1 overflow-auto mt-0 flex items-center justify-center text-sm text-muted-foreground">
+                Chat coming soon…
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center px-8 text-muted-foreground">
+              <p className="text-sm">Insights, charts &amp; chat will appear here after upload</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
