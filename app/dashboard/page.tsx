@@ -57,21 +57,21 @@ export default function DashboardPage() {
         {/* Right — tabs */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {data ? (
-            <Tabs defaultValue="insights" className="flex flex-col h-full">
-              <div className="px-4 pt-4 shrink-0">
+            <Tabs defaultValue="insights" className="flex flex-col h-full overflow-hidden">
+              <div className="px-4 pt-4 pb-2 shrink-0">
                 <TabsList className="w-full">
                   <TabsTrigger value="insights" className="flex-1">Insights</TabsTrigger>
                   <TabsTrigger value="charts" className="flex-1">Charts</TabsTrigger>
                   <TabsTrigger value="ask" className="flex-1">Ask</TabsTrigger>
                 </TabsList>
               </div>
-              <TabsContent value="insights" className="flex-1 overflow-auto mt-0">
+              <TabsContent value="insights" className="flex-1 min-h-0 overflow-auto">
                 <InsightsTab data={data} />
               </TabsContent>
-              <TabsContent value="charts" className="flex-1 overflow-auto mt-0 flex items-center justify-center text-sm text-muted-foreground">
+              <TabsContent value="charts" className="flex-1 min-h-0 overflow-auto flex items-center justify-center text-sm text-muted-foreground">
                 Charts coming next…
               </TabsContent>
-              <TabsContent value="ask" className="flex-1 overflow-auto mt-0 flex items-center justify-center text-sm text-muted-foreground">
+              <TabsContent value="ask" className="flex-1 min-h-0 overflow-auto flex items-center justify-center text-sm text-muted-foreground">
                 Chat coming soon…
               </TabsContent>
             </Tabs>
