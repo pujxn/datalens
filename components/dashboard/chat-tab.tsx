@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Send, Bot, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { ParsedCSV } from '@/lib/csv-utils'
 
 type Message = {
@@ -147,7 +149,37 @@ export function ChatTab({ data }: Props) {
                 ? 'bg-primary text-primary-foreground rounded-tr-sm'
                 : 'bg-muted text-foreground rounded-tl-sm'
             }`}>
-              {msg.content || (
+              {msg.content ? (
+                msg.role === 'user' ? (
+                  <span className="whitespace-pre-wrap">{msg.content}</span>
+                ) : (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>,
+                      li: ({ children }) => <li>{children}</li>,
+                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                      code: ({ children, className }) =>
+                        className ? (
+                          <code className="block bg-background/60 rounded px-2 py-1.5 text-xs font-mono overflow-x-auto my-1 whitespace-pre">{children}</code>
+                        ) : (
+                          <code className="bg-background/60 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
+                        ),
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto my-2">
+                          <table className="text-xs border-collapse w-full">{children}</table>
+                        </div>
+                      ),
+                      th: ({ children }) => <th className="border border-border/40 px-2 py-1 bg-background/40 font-semibold text-left">{children}</th>,
+                      td: ({ children }) => <td className="border border-border/40 px-2 py-1">{children}</td>,
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                )
+              ) : (
                 <span className="inline-block h-4 w-1.5 bg-current opacity-60 animate-pulse rounded-sm" />
               )}
             </div>
