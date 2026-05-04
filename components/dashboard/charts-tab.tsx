@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid, Cell,
+  LineChart, Line, CartesianGrid, Cell, Legend,
 } from 'recharts'
 import { BarChart2, TrendingUp, Hash } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -163,6 +163,7 @@ export function ChartsTab({ data }: Props) {
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'hsl(215 20.2% 65.1%)' }} />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(215 20.2% 65.1%)' }} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Legend wrapperStyle={{ fontSize: 12, color: 'hsl(215 20.2% 65.1%)' }} />
               <Line type="monotone" dataKey={dataKey} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, fill: '#3b82f6' }} activeDot={{ r: 5 }} />
             </LineChart>
           ) : (
@@ -177,6 +178,7 @@ export function ChartsTab({ data }: Props) {
               />
               <YAxis tick={{ fontSize: 11, fill: 'hsl(215 20.2% 65.1%)' }} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Legend wrapperStyle={{ fontSize: 12, color: 'hsl(215 20.2% 65.1%)' }} />
               <Bar dataKey={dataKey} radius={[4, 4, 0, 0]}>
                 {chartData.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.85} />
