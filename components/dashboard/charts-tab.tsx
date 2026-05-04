@@ -117,8 +117,11 @@ export function ChartsTab({ data }: Props) {
 
   if (!charts.length) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        No suitable columns for visualization
+      <div className="flex flex-col gap-2 p-5 text-sm text-muted-foreground">
+        <p>No suitable columns detected. Column types:</p>
+        {data.columns.map(c => (
+          <p key={c.name}>{c.name}: <strong>{c.type}</strong> ({c.uniqueCount} unique)</p>
+        ))}
       </div>
     )
   }
