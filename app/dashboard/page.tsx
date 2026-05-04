@@ -8,6 +8,7 @@ import { CSVUploader } from '@/components/dashboard/csv-uploader'
 import { DataTable } from '@/components/dashboard/data-table'
 import { InsightsTab } from '@/components/dashboard/insights-tab'
 import { ChartsTab } from '@/components/dashboard/charts-tab'
+import { ChatTab } from '@/components/dashboard/chat-tab'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import type { ParsedCSV } from '@/lib/csv-utils'
@@ -87,11 +88,7 @@ export default function DashboardPage() {
               <div className="flex-1 overflow-y-auto min-h-0">
                 {tab === 'Insights' && <InsightsTab data={data} />}
                 {tab === 'Charts' && <ChartsTab data={data} />}
-                {tab === 'Ask' && (
-                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    Chat coming soon…
-                  </div>
-                )}
+                {tab === 'Ask' && <ChatTab data={data} />}
               </div>
             </>
           ) : (

@@ -44,7 +44,12 @@
 - Chart picker buttons, description labels, legends
 - Tooltip cursor fixed (no grey hover box)
 
-### ⏳ Step 6 — Chat tab + `/api/chat`
+### ✅ Step 6 — Chat tab + `/api/chat`
+- POST route streams Groq response with full dataset context in system message
+- ChatTab: scrollable message history, user/assistant bubbles, streaming cursor
+- Suggested starter questions when conversation is empty
+- Enter to send (Shift+Enter for newline), auto-scroll to latest message
+- Conversation resets when a new CSV is uploaded
 
 ## Env vars
 ```
