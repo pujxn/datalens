@@ -56,7 +56,7 @@ export default function LandingPage() {
         <div className="flex flex-col items-center gap-6 max-w-3xl">
           <div className="flex items-center gap-2 rounded-full border border-blue-900 bg-blue-950/40 px-3 py-1 text-xs text-blue-400 font-medium">
             <Sparkles className="h-3.5 w-3.5" />
-            Powered by Claude AI
+            Powered by Groq AI
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-50 leading-tight">
             Your data,{' '}
@@ -106,7 +106,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-gray-800/60 px-4 py-6 text-center text-xs text-gray-600">
-        &copy; {new Date().getFullYear()} DataLens &middot; Built with Next.js &amp; Claude AI
+        &copy; {new Date().getFullYear()} DataLens &middot; Built with Next.js &amp; Groq AI
       </footer>
     </div>
   )
