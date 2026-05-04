@@ -24,7 +24,7 @@
 
 ### ✅ Step 3 — CSV upload + Papa Parse + table preview
 ### ✅ Step 4 — `/api/analyze` + Groq streaming insights
-### ⏳ Step 5 — Recharts auto-charts
+### ✅ Step 5 — Recharts auto-charts
 ### ⏳ Step 6 — Chat tab + `/api/chat`
 
 ## Env vars needed
