@@ -8,14 +8,18 @@ import { CSVUploader } from '@/components/dashboard/csv-uploader'
 import { DataTable } from '@/components/dashboard/data-table'
 import { InsightsTab } from '@/components/dashboard/insights-tab'
 import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 import type { ParsedCSV } from '@/lib/csv-utils'
+
+const TABS = ['Insights', 'Charts', 'Ask'] as const
+type Tab = typeof TABS[number]
 
 export default function DashboardPage() {
   const [data, setData] = useState<ParsedCSV | null>(null)
+  const [tab, setTab] = useState<Tab>('Insights')
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
 
       {/* Nav */}
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl shrink-0 z-10">
@@ -30,11 +34,11 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      {/* Split layout */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      {/* Body */}
+      <div className="flex flex-1 min-h-0">
 
         {/* Left — upload + table */}
-        <div className="w-[44%] min-w-[320px] flex flex-col border-r border-border/50 overflow-hidden">
+        <div className="w-[44%] min-w-[320px] flex flex-col border-r border-border/50 min-h-0">
           <div className="p-4 shrink-0">
             <CSVUploader onDataParsed={setData} hasData={!!data} />
           </div>
@@ -42,7 +46,7 @@ export default function DashboardPage() {
           {data ? (
             <>
               <Separator className="shrink-0" />
-              <div className="flex-1 overflow-auto p-4">
+              <div className="flex-1 overflow-y-auto p-4">
                 <DataTable data={data} />
               </div>
             </>
@@ -54,27 +58,45 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Right — tabs */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Right — analysis */}
+        <div className="flex-1 flex flex-col min-h-0">
           {data ? (
-            <Tabs defaultValue="insights" className="flex flex-col h-full overflow-hidden">
-              <div className="px-4 pt-4 pb-2 shrink-0">
-                <TabsList className="w-full">
-                  <TabsTrigger value="insights" className="flex-1">Insights</TabsTrigger>
-                  <TabsTrigger value="charts" className="flex-1">Charts</TabsTrigger>
-                  <TabsTrigger value="ask" className="flex-1">Ask</TabsTrigger>
-                </TabsList>
+            <>
+              {/* Tab bar */}
+              <div className="px-4 pt-4 pb-0 shrink-0">
+                <div className="flex gap-1 rounded-lg bg-muted p-1">
+                  {TABS.map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setTab(t)}
+                      className={cn(
+                        'flex-1 rounded-md py-1.5 text-sm font-medium transition-all',
+                        tab === t
+                          ? 'bg-background text-foreground shadow'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <TabsContent value="insights" className="flex-1 min-h-0 overflow-auto">
-                <InsightsTab data={data} />
-              </TabsContent>
-              <TabsContent value="charts" className="flex-1 min-h-0 overflow-auto flex items-center justify-center text-sm text-muted-foreground">
-                Charts coming next…
-              </TabsContent>
-              <TabsContent value="ask" className="flex-1 min-h-0 overflow-auto flex items-center justify-center text-sm text-muted-foreground">
-                Chat coming soon…
-              </TabsContent>
-            </Tabs>
+
+              {/* Tab content */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {tab === 'Insights' && <InsightsTab data={data} />}
+                {tab === 'Charts' && (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                    Charts coming next…
+                  </div>
+                )}
+                {tab === 'Ask' && (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                    Chat coming soon…
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center px-8 text-muted-foreground">
               <p className="text-sm">Insights, charts &amp; chat will appear here after upload</p>
